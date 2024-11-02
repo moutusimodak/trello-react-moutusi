@@ -123,7 +123,10 @@ const CheckList = ({ cardId }) => {
                   </IconButton>
                 </ListItemSecondaryAction>
               </ListItem>
-              <CheckListItems checkListId={checkList.id} />
+             
+              <CheckListItems checkListId={checkList.id} cardId={cardId} />
+
+
             </Box>
           ))}
         </List>

@@ -5,7 +5,6 @@ const APIKey = import.meta.env.VITE_APIKEY;
 const APIToken = import.meta.env.VITE_TOKEN;
 const BaseUrl = import.meta.env.VITE_BASE_URL;
 
-
 import {
   Box,
   Button,
@@ -19,8 +18,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-
-const CheckListItems = ({ checkListId }) => {
+const CheckListItems = ({ checkListId, cardId }) => {
   const [checkItems, setCheckItems] = useState([]);
   const [error, setError] = useState(null);
   const [itemName, setItemName] = useState("");
@@ -33,7 +31,7 @@ const CheckListItems = ({ checkListId }) => {
         );
         setCheckItems(response.data);
       } catch (error) {
-        setError(error.message);
+        setError("Error fetching checklist items.");
       }
     };
 
@@ -50,7 +48,7 @@ const CheckListItems = ({ checkListId }) => {
       setCheckItems((prevList) => [...prevList, response.data]);
       setItemName("");
     } catch (error) {
-      setError(error.message);
+      setError("Error creating checklist item.");
     }
   };
 
@@ -63,7 +61,27 @@ const CheckListItems = ({ checkListId }) => {
         prevList.filter((item) => item.id !== checkItemId)
       );
     } catch (error) {
-      setError(error.message);
+      setError("Error deleting checklist item.");
+    }
+  };
+
+  const updateCheckListItemStatus = async (checkItemId, newStatus) => {
+    try {
+      await axios.put(
+        `${BaseUrl}/cards/${cardId}/checkItem/${checkItemId}?state=${
+          newStatus ? "complete" : "incomplete"
+        }&key=${APIKey}&token=${APIToken}`
+      );
+
+      setCheckItems((prevList) =>
+        prevList.map((item) =>
+          item.id === checkItemId
+            ? { ...item, state: newStatus ? "complete" : "incomplete" }
+            : item
+        )
+      );
+    } catch (error) {
+      setError("Failed to update checklist item status.");
     }
   };
 
@@ -91,7 +109,13 @@ const CheckListItems = ({ checkListId }) => {
               justifyContent: "space-between",
             }}
           >
-            <Checkbox defaultChecked sx={{ mr: 1 }} />
+            <Checkbox
+              checked={item.state === "complete"}
+              onChange={() =>
+                updateCheckListItemStatus(item.id, item.state !== "complete")
+              }
+              sx={{ mr: 1 }}
+            />
             <ListItemText primary={item.name} />
             <IconButton
               color="error"
