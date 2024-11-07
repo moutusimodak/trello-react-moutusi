@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -34,6 +34,7 @@ const BoardDetails = () => {
   useEffect(() => {
     const fetchBoardDetails = async () => {
       try {
+        await fetchBoardDetails();
         const response = await axios.get(
           `${BaseUrl}/boards/${id}?key=${APIKey}&token=${APIToken}`
         );
@@ -53,7 +54,7 @@ const BoardDetails = () => {
         
         setLists(response.data);
       } catch (error) {
-        setError(error.message);
+        setError(() => error.message);
         setToast({
           open: true,
           message: error.message,

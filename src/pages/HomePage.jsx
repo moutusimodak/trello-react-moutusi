@@ -23,6 +23,7 @@ const HomePage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [bgColor, setBgColor] = useState("white");
   const [boardName, setBoardName] = useState("");
+  const [error, setError] = useState("");
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -43,11 +44,11 @@ const HomePage = () => {
           `${BaseUrl}/members/me/boards?key=${APIKey}&token=${APIToken}`
         );
        
-        console.log(response.data);
+
         
         setBoards(response.data);
       } catch (error) {
-        console.error("Error fetching boards:", error);
+        setError(() => error.message);
       }
     };
     fetchData();
@@ -71,7 +72,7 @@ const HomePage = () => {
         });
         onClose();
       } else {
-        console.error("Unexpected response:", response);
+        setError(() => error.message);
         setToast({
           open: true,
           message: "Error. Unexpected response from the server.",

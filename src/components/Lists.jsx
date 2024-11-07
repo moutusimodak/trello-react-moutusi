@@ -41,7 +41,7 @@ const Lists = ({ list, onDelete, loading }) => {
         const response = await axios.get(
           `${BaseUrl}/lists/${list.id}/cards?key=${APIKey}&token=${APIToken}`
         );
-        console.log("fetching card is : ", response.data);
+       
 
         setCards(response.data);
       } catch (error) {
