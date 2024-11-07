@@ -1,4 +1,3 @@
-import React from "react";
 import { Container, Typography, Button, Box } from "@mui/material";
 import WarningIcon from "@mui/icons-material/Warning";
 import { Link } from "react-router-dom";
