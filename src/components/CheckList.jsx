@@ -22,10 +22,9 @@ import {
   ListItemText,
   ListItemSecondaryAction,
 } from "@mui/material";
+
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
-
-
 
 
 const CheckList = ({ cardId }) => {
