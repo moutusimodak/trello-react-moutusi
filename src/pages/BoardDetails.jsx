@@ -1,10 +1,9 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
 
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL
+import { fetchBoards } from "../features/boardsSlice";
+import { fetchLists, createList, deleteList } from "../features/listsSlice";
 
 import Lists from "../components/Lists";
 
@@ -19,73 +18,36 @@ import {
   Alert,
 } from "@mui/material";
 
-
 const BoardDetails = () => {
   const { id } = useParams();
-  const [board, setBoard] = useState([]);
-  const [lists, setLists] = useState([]);
+  const dispatch = useDispatch();
+  const boards = useSelector((state) => state.boards.board);
+  const lists = useSelector((state) => state.lists.items);
+  const listsStatus = useSelector((state) => state.lists.status);
   const [listName, setListName] = useState("");
-  const [error, setError] = useState("");
   const [openModal, setOpenModal] = useState(false);
-  const [toast, setToast] = useState({ open: false, message: "", severity: "" });
+  const [toast, setToast] = useState({
+    open: false,
+    message: "",
+    severity: "",
+  });
 
-
-  
   useEffect(() => {
-    const fetchBoardDetails = async () => {
-      try {
-        await fetchBoardDetails();
-        const response = await axios.get(
-          `${BaseUrl}/boards/${id}?key=${APIKey}&token=${APIToken}`
-        );
-        setBoard(response.data);
-      } catch (error) {
-        setError(error.message);
-      }
-    };
+    dispatch(fetchBoards(id));
+    dispatch(fetchLists(id));
+  }, [id, dispatch]);
 
-    //Fetching Lists
-    const fetchLists = async () => {
-      try {
-        const response = await axios.get(
-          `${BaseUrl}/boards/${id}/lists?filter=open&key=${APIKey}&token=${APIToken}`
-        );
-      
-        
-        setLists(response.data);
-      } catch (error) {
-        setError(() => error.message);
-        setToast({
-          open: true,
-          message: error.message,
-          severity: "error",
-        });
-      }
-    };
-
-    fetchBoardDetails();
-    fetchLists();
-  }, [id]);
-
-
-  //Creating List
-  const createList = async () => {
+  const handleCreateList = async () => {
     try {
-      const response = await axios.post(
-        `${BaseUrl}/lists?name=${encodeURIComponent(
-          listName
-        )}&idBoard=${id}&key=${APIKey}&token=${APIToken}`
-      );
-      setLists((prevLists) => [...prevLists, response.data]);
+      dispatch(createList({ boardId: id, listName }));
       setListName("");
       setOpenModal(false);
       setToast({
         open: true,
-        message: `List "${response.data.name}" is created successfully.`,
+        message: `List "${listName}" is created successfully.`,
         severity: "success",
       });
     } catch (error) {
-      setError(error.message);
       setToast({
         open: true,
         message: error.message,
@@ -94,21 +56,15 @@ const BoardDetails = () => {
     }
   };
 
-
-  //Deleting List
-  const deleteList = async (listId) => {
+  const handleDeleteList = async (listId) => {
     try {
-      await axios.put(
-        `${BaseUrl}/lists/${listId}/closed?value=true&key=${APIKey}&token=${APIToken}`
-      );
-      setLists((prevLists) => prevLists.filter((list) => list.id !== listId));
+      dispatch(deleteList({ listId }));
       setToast({
         open: true,
-        message: "The list is deleted successfully.",
+        message: "List deleted successfully.",
         severity: "success",
       });
     } catch (error) {
-      setError(error.message);
       setToast({
         open: true,
         message: error.message,
@@ -121,31 +77,39 @@ const BoardDetails = () => {
 
   return (
     <Box
-      sx={{ backgroundColor: "black", minHeight: "100vh", padding: 4, color: "white" }} 
+      sx={{
+        backgroundColor: "black",
+        minHeight: "100vh",
+        padding: 4,
+        color: "white",
+      }}
     >
       <Typography variant="h4" gutterBottom>
-        {board.name || "Board Details"}
+        {boards || "Board Details"}
       </Typography>
 
       <Grid container spacing={2} sx={{ marginTop: 2 }}>
-        {lists.map((list) => (
-          <Grid item key={list.id} xs={12} sm={6} md={3}> 
-            <Lists list={list} onDelete={deleteList} />
-          </Grid>
-        ))}
+        {listsStatus === "loading" ? (
+          <Typography>Loading Lists...</Typography>
+        ) : (
+          lists.map((list) => (
+            <Grid item key={list.id} xs={12} sm={6} md={3}>
+              <Lists list={list} onDelete={handleDeleteList} />
+            </Grid>
+          ))
+        )}
         <Grid item>
-          <Button 
-            variant="contained" 
-            color="primary" 
+          <Button
+            variant="contained"
+            color="primary"
             onClick={() => setOpenModal(true)}
-            sx={{ color: "white" }} 
+            sx={{ color: "white" }}
           >
             + Create List
           </Button>
         </Grid>
       </Grid>
 
-   
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Box
           sx={{
@@ -167,19 +131,25 @@ const BoardDetails = () => {
             onChange={(e) => setListName(e.target.value)}
             margin="normal"
           />
-          <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={createList}
-              sx={{ color: "white" }} 
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 2,
+            }}
+          >
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCreateList}
+              sx={{ color: "white" }}
             >
               Create
             </Button>
-            <Button 
-              variant="outlined" 
-              onClick={() => setOpenModal(false)} 
-              sx={{ color: "black" }} 
+            <Button
+              variant="outlined"
+              onClick={() => setOpenModal(false)}
+              sx={{ color: "black" }}
             >
               Cancel
             </Button>
@@ -187,8 +157,16 @@ const BoardDetails = () => {
         </Box>
       </Modal>
 
-      <Snackbar open={toast.open} autoHideDuration={6000} onClose={handleToastClose}>
-        <Alert onClose={handleToastClose} severity={toast.severity} sx={{ width: "100%" }}>
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={6000}
+        onClose={handleToastClose}
+      >
+        <Alert
+          onClose={handleToastClose}
+          severity={toast.severity}
+          sx={{ width: "100%" }}
+        >
           {toast.message}
         </Alert>
       </Snackbar>

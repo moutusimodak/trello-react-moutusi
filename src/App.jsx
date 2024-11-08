@@ -4,8 +4,12 @@ import Navbar from "./components/Navbar";
 import BoardDetails from "./pages/BoardDetails";
 import ErrorPage from "./pages/ErrorPage";
 
+import { Provider } from "react-redux";
+import store from "./store/store";
+
 const App = () => {
   return (
+    <Provider store={store}>
     <BrowserRouter>
       <Navbar />
       <Routes>
@@ -15,6 +19,7 @@ const App = () => {
         <Route path="*" element={<ErrorPage />} />
       </Routes>
     </BrowserRouter>
+    </Provider>
   );
 };
 

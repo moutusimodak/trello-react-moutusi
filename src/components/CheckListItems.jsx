@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
 
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL;
+import {
+  fetchCheckItems,
+  createCheckItem,
+  deleteCheckItem,
+  updateCheckItemStatus,
+} from "../features/checkListItemsSlice";
 
 import {
   Box,
@@ -16,73 +19,33 @@ import {
   Checkbox,
   IconButton,
 } from "@mui/material";
+
 import DeleteIcon from "@mui/icons-material/Delete";
 
 const CheckListItems = ({ checkListId, cardId }) => {
-  const [checkItems, setCheckItems] = useState([]);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const checkItems = useSelector(
+    (state) => state.checkListItems.itemsByCheckListId[checkListId] || []
+  );
   const [itemName, setItemName] = useState("");
 
   useEffect(() => {
-    const fetchCheckItems = async () => {
-      try {
-        const response = await axios.get(
-          `${BaseUrl}/checklists/${checkListId}/checkItems?key=${APIKey}&token=${APIToken}`
-        );
-        setCheckItems(response.data);
-      } catch (error) {
-        setError("Error fetching checklist items.");
-      }
-    };
+    dispatch(fetchCheckItems(checkListId));
+  }, [checkListId, dispatch]);
 
-    fetchCheckItems();
-  }, [checkListId]);
-
-  const createCheckListItem = async () => {
-    if (!itemName) return;
-
-    try {
-      const response = await axios.post(
-        `${BaseUrl}/checklists/${checkListId}/checkItems?name=${itemName}&key=${APIKey}&token=${APIToken}`
-      );
-      setCheckItems((prevList) => [...prevList, response.data]);
+  const handleCreateCheckListItem = () => {
+    if (itemName.trim()) {
+      dispatch(createCheckItem({ checkListId, name: itemName }));
       setItemName("");
-    } catch (error) {
-      setError("Error creating checklist item.");
     }
   };
 
-  const deleteCheckListItem = async (checkItemId) => {
-    try {
-      await axios.delete(
-        `${BaseUrl}/checklists/${checkListId}/checkItems/${checkItemId}?key=${APIKey}&token=${APIToken}`
-      );
-      setCheckItems((prevList) =>
-        prevList.filter((item) => item.id !== checkItemId)
-      );
-    } catch (error) {
-      setError("Error deleting checklist item.");
-    }
+  const handleDeleteCheckListItem = (itemId) => {
+    dispatch(deleteCheckItem({ checkListId, itemId }));
   };
 
-  const updateCheckListItemStatus = async (checkItemId, newStatus) => {
-    try {
-      await axios.put(
-        `${BaseUrl}/cards/${cardId}/checkItem/${checkItemId}?state=${
-          newStatus ? "complete" : "incomplete"
-        }&key=${APIKey}&token=${APIToken}`
-      );
-
-      setCheckItems((prevList) =>
-        prevList.map((item) =>
-          item.id === checkItemId
-            ? { ...item, state: newStatus ? "complete" : "incomplete" }
-            : item
-        )
-      );
-    } catch (error) {
-      setError("Failed to update checklist item status.");
-    }
+  const handleUpdateStatus = (itemId, isComplete) => {
+    dispatch(updateCheckItemStatus({ cardId, itemId, newStatus: !isComplete }));
   };
 
   return (
@@ -90,11 +53,6 @@ const CheckListItems = ({ checkListId, cardId }) => {
       <Typography variant="body1" fontWeight="bold" gutterBottom>
         Checklist Items
       </Typography>
-      {error && (
-        <Typography color="error" mb={2}>
-          {error}
-        </Typography>
-      )}
       <List sx={{ maxHeight: 200, overflowY: "auto", p: 0 }}>
         {checkItems.map((item) => (
           <ListItem
@@ -112,14 +70,14 @@ const CheckListItems = ({ checkListId, cardId }) => {
             <Checkbox
               checked={item.state === "complete"}
               onChange={() =>
-                updateCheckListItemStatus(item.id, item.state !== "complete")
+                handleUpdateStatus(item.id, item.state === "complete")
               }
               sx={{ mr: 1 }}
             />
             <ListItemText primary={item.name} />
             <IconButton
               color="error"
-              onClick={() => deleteCheckListItem(item.id)}
+              onClick={() => handleDeleteCheckListItem(item.id)}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
@@ -140,7 +98,7 @@ const CheckListItems = ({ checkListId, cardId }) => {
         <Button
           variant="contained"
           color="primary"
-          onClick={createCheckListItem}
+          onClick={handleCreateCheckListItem}
         >
           Add Item
         </Button>

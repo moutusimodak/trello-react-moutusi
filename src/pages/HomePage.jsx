@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
 
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL
-
-import Boards from "../components/Boards";
+import { fetchBoards, createBoard } from "../features/boardsSlice";
 
 import {
   Box,
@@ -18,74 +14,50 @@ import {
   Grid,
 } from "@mui/material";
 
+import Boards from "../components/Boards";
+
 const HomePage = () => {
-  const [boards, setBoards] = useState([]);
+  const dispatch = useDispatch();
+  const boards = useSelector((state) => state.boards.items);
   const [isOpen, setIsOpen] = useState(false);
-  const [bgColor, setBgColor] = useState("white");
   const [boardName, setBoardName] = useState("");
-  const [error, setError] = useState("");
+  const [bgColor, setBgColor] = useState("white");
   const [toast, setToast] = useState({
     open: false,
     message: "",
     severity: "",
   });
 
+  useEffect(() => {
+    dispatch(fetchBoards());
+  }, [dispatch]);
+
+  const handleCreateBoard = () => {
+    if (boardName) {
+      dispatch(createBoard({ name: boardName, bgColor }))
+        .unwrap()
+        .then(() => {
+          setToast({
+            open: true,
+            message: "Board Created!",
+            severity: "success",
+          });
+          setIsOpen(false);
+        })
+        .catch(() => {
+          setToast({
+            open: true,
+            message: "Error creating board.",
+            severity: "error",
+          });
+        });
+    }
+  };
+
   const onOpen = () => setIsOpen(true);
   const onClose = () => {
     setBoardName("");
     setIsOpen(false);
-  };
-
-  //Fetching Board
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(
-          `${BaseUrl}/members/me/boards?key=${APIKey}&token=${APIToken}`
-        );
-       
-
-        
-        setBoards(response.data);
-      } catch (error) {
-        setError(() => error.message);
-      }
-    };
-    fetchData();
-  }, []);
-
-  //Creating Board
-  const handleCreateBoard = async () => {
-    try {
-      const response = await axios.post(
-        `${BaseUrl}/boards/?name=${encodeURIComponent(
-          boardName
-        )}&prefs_background=${bgColor}&key=${APIKey}&token=${APIToken}`
-      );
-
-      if (response.status === 200) {
-        setBoards([...boards, response.data]);
-        setToast({
-          open: true,
-          message: "Board Created. Your new board has been created.",
-          severity: "success",
-        });
-        onClose();
-      } else {
-        setError(() => error.message);
-        setToast({
-          open: true,
-          message: "Error. Unexpected response from the server.",
-          severity: "error",
-        });
-      }
-    } catch (error) {
-      setToast({
-        open: true,
-        message: "Error. An error occurred while creating the board.",
-        severity: "error",
-      });
-    }
   };
 
   const handleToastClose = () => setToast({ ...toast, open: false });
@@ -95,7 +67,6 @@ const HomePage = () => {
       <Typography variant="h4" marginY={4} color="white">
         My Trello Boards
       </Typography>
-
       <Box>
         <Grid container spacing={2}>
           <Grid item>
@@ -172,7 +143,6 @@ const HomePage = () => {
             value={boardName}
             onChange={(e) => setBoardName(e.target.value)}
           />
-
           <Box display="flex" justifyContent="space-between" marginTop={2}>
             <Button variant="contained" onClick={handleCreateBoard}>
               Create Board

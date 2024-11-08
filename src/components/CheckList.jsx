@@ -1,12 +1,14 @@
-import  { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL;
+import {
+  fetchCheckLists,
+  createCheckList,
+  deleteCheckList,
+  clearError,
+} from "../features/checkListsSlice";
 
 import CheckListItems from "./CheckListItems";
-
 
 import {
   Box,
@@ -26,68 +28,41 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-
 const CheckList = ({ cardId }) => {
-  const [checkLists, setCheckLists] = useState([]);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const checkLists = useSelector(
+    (state) => state.checkLists.items[cardId] || []
+  );
+  const loading = useSelector((state) => state.checkLists.loading);
+  const error = useSelector((state) => state.checkLists.error);
+
   const [isInputVisible, setIsInputVisible] = useState(false);
   const [newCheckListName, setNewCheckListName] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  //Fetching Checklist
   useEffect(() => {
-    const fetchCheckLists = async () => {
-      try {
-        const response = await axios.get(
-          `${BaseUrl}/cards/${cardId}/checklists?key=${APIKey}&token=${APIToken}`
-        );
-        setCheckLists(response.data);
-      } catch (error) {
-        setError(error.message);
-        setSnackbarOpen(true);
-      }
-    };
+    dispatch(fetchCheckLists(cardId));
+  }, [cardId, dispatch]);
 
-    fetchCheckLists();
-  }, [cardId]);
-
-
-  //Creating checkList
-  const createList = async () => {
+  const handleCreateList = () => {
     if (!newCheckListName) return;
-
-    try {
-      const response = await axios.post(
-        `${BaseUrl}/cards/${cardId}/checklists?key=${APIKey}&token=${APIToken}`,
-        { name: newCheckListName }
-      );
-      setCheckLists((prevLists) => [...prevLists, response.data]);
-      setNewCheckListName("");
-      setIsInputVisible(false);
-    } catch (error) {
-      setError(error.message);
-      setSnackbarOpen(true);
-    }
+    dispatch(createCheckList({ cardId, name: newCheckListName }));
+    setNewCheckListName("");
+    setIsInputVisible(false);
   };
 
-  //Deleting CheckList
-  const deleteCheckList = async (checkListId) => {
-    try {
-      await axios.delete(
-        `${BaseUrl}/checklists/${checkListId}?key=${APIKey}&token=${APIToken}`
-      );
-      setCheckLists((prevLists) =>
-        prevLists.filter((list) => list.id !== checkListId)
-      );
-    } catch (error) {
-      setError(error.message);
-      setSnackbarOpen(true);
-    }
+  const handleDeleteCheckList = (checkListId) => {
+    dispatch(deleteCheckList(checkListId));
   };
 
   const handleSnackbarClose = () => {
+    dispatch(clearError());
     setSnackbarOpen(false);
   };
+
+  useEffect(() => {
+    if (error) setSnackbarOpen(true);
+  }, [error]);
 
   return (
     <Box
@@ -116,16 +91,13 @@ const CheckList = ({ cardId }) => {
                   <IconButton
                     edge="end"
                     color="error"
-                    onClick={() => deleteCheckList(checkList.id)}
+                    onClick={() => handleDeleteCheckList(checkList.id)}
                   >
                     <DeleteIcon />
                   </IconButton>
                 </ListItemSecondaryAction>
               </ListItem>
-             
               <CheckListItems checkListId={checkList.id} cardId={cardId} />
-
-
             </Box>
           ))}
         </List>
@@ -167,7 +139,7 @@ const CheckList = ({ cardId }) => {
             variant="contained"
             color="primary"
             fullWidth
-            onClick={createList}
+            onClick={handleCreateList}
             sx={{ mt: 2 }}
           >
             Add

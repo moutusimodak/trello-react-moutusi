@@ -1,15 +1,7 @@
-import  { useEffect, useState } from "react";
-import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
 
-
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL;
-
-
-import Cards from "./Cards";
-import CheckList from "./CheckList";
-
+import { fetchCards, deleteCard } from "../features/cardsSlice";
 
 import {
   Box,
@@ -24,46 +16,40 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-
+import CheckList from "./CheckList";
+import Cards from "./Cards";
 
 const Lists = ({ list, onDelete, loading }) => {
-  const [cards, setCards] = useState([]);
+  const dispatch = useDispatch();
+  const cards = useSelector((state) => state.cards.cardsById[list.id] || {});
+  const cardLoading = useSelector((state) => state.cards.loading);
+
   const [error, setError] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-
-  //Fetching Card
   useEffect(() => {
-    const fetchCards = async () => {
-      try {
-        const response = await axios.get(
-          `${BaseUrl}/lists/${list.id}/cards?key=${APIKey}&token=${APIToken}`
-        );
-       
-
-        setCards(response.data);
-      } catch (error) {
-        setError(error.message);
-      }
-    };
-
-    fetchCards();
-  }, [list.id]);
+    dispatch(fetchCards(list.id))
+      .unwrap()
+      .catch((err) => {
+        setError("Failed to fetch cards: " + err.message);
+        setSnackbarOpen(true);
+      });
+  }, [list.id, dispatch]);
 
 
-  //Deleting Card
-  const deleteCard = async (cardId) => {
-    try {
-      await axios.delete(
-        `${BaseUrl}/cards/${cardId}?key=${APIKey}&token=${APIToken}`
-      );
-      setCards((prevCards) => prevCards.filter((card) => card.id !== cardId));
-    } catch (error) {
-      setError(error.message);
-      setSnackbarOpen(true);
-    }
+  const handleDeleteCard = (cardId) => {
+    dispatch(deleteCard(cardId))
+      .unwrap()
+      .catch((err) => {
+        setError(err.message);
+        setSnackbarOpen(true);
+      });
+  };
+
+  const handleDeleteList = (e) => {
+    onDelete(list.id);
   };
 
   const handleClickModal = (cardId) => {
@@ -86,44 +72,48 @@ const Lists = ({ list, onDelete, loading }) => {
         <CardHeader
           title={list.name}
           action={
-            <IconButton onClick={() => onDelete(list.id)} disabled={loading}>
+            <IconButton onClick={handleDeleteList} disabled={loading}>
               <CloseIcon />
             </IconButton>
           }
         />
         <CardContent>
-          {cards.map((card) => (
-            <Box
-              key={card.id}
-              mb={1}
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{
-                bgcolor: "white",
-                p: 1,
-                borderRadius: 1,
-                boxShadow: 1,
-              }}
-              onClick={() => handleClickModal(card.id)}
-            >
-              <Typography>{card.name}</Typography>
-              <IconButton
-                color="error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteCard(card.id);
+          {cardLoading ? (
+            <Typography>Loading cards...</Typography>
+          ) : (
+            Object.values(cards).map((card) => (
+              <Box
+                key={card.id}
+                mb={1}
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{
+                  bgcolor: "white",
+                  p: 1,
+                  borderRadius: 1,
+                  boxShadow: 1,
                 }}
+                onClick={() => handleClickModal(card.id)}
               >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          ))}
-
-          <Cards id={list.id} setCards={setCards} />
+                <Typography>{card.name}</Typography>
+                <IconButton
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteCard(card.id);
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            ))
+          )}
+          <Cards id={list.id} />
         </CardContent>
       </Card>
 
+     
       <Modal open={isOpen} onClose={handleModalClose}>
         <Box
           sx={{
@@ -147,12 +137,12 @@ const Lists = ({ list, onDelete, loading }) => {
           >
             <CloseIcon />
           </IconButton>
-
           <Typography variant="h6" sx={{ mb: 2 }}>
             Add Item to Checklist
           </Typography>
-
-          <CheckList cardId={selectedCard} />
+          {selectedCard && (
+            <CheckList cardId={selectedCard} />
+          )}
         </Box>
       </Modal>
 
