@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL
-
 import Boards from "../components/Boards";
+import { fetchBoards, addBoard } from "../services/boardService";
 
 import {
   Box,
@@ -38,48 +33,30 @@ const HomePage = () => {
 
   //Fetching Board
   useEffect(() => {
-    const fetchData = async () => {
+    const loadBoards = async () => {
       try {
-        const response = await axios.get(
-          `${BaseUrl}/members/me/boards?key=${APIKey}&token=${APIToken}`
-        );
-       
-
-        
-        setBoards(response.data);
+        const boardsData = await fetchBoards();
+        setBoards(boardsData);
       } catch (error) {
-        setError(() => error.message);
+        setError(error.message);
       }
     };
-    fetchData();
+    loadBoards();
   }, []);
 
   //Creating Board
   const handleCreateBoard = async () => {
     try {
-      const response = await axios.post(
-        `${BaseUrl}/boards/?name=${encodeURIComponent(
-          boardName
-        )}&prefs_background=${bgColor}&key=${APIKey}&token=${APIToken}`
-      );
-
-      if (response.status === 200) {
-        setBoards([...boards, response.data]);
-        setToast({
-          open: true,
-          message: "Board Created. Your new board has been created.",
-          severity: "success",
-        });
-        onClose();
-      } else {
-        setError(() => error.message);
-        setToast({
-          open: true,
-          message: "Error. Unexpected response from the server.",
-          severity: "error",
-        });
-      }
+      const newBoard = await addBoard(boardName, bgColor);
+      setBoards([...boards, newBoard]);
+      setToast({
+        open: true,
+        message: "Board Created. Your new board has been created.",
+        severity: "success",
+      });
+      onClose();
     } catch (error) {
+      setError(error.message);
       setToast({
         open: true,
         message: "Error. An error occurred while creating the board.",
