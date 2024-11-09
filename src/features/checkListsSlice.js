@@ -1,18 +1,15 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL;
+import {
+  fetchCheckListsService,
+  createCheckListService,
+  deleteCheckListService,
+} from "../services/checkListService";
 
 export const fetchCheckLists = createAsyncThunk(
   "checkLists/fetchCheckLists",
   async (cardId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${BaseUrl}/cards/${cardId}/checklists?key=${APIKey}&token=${APIToken}`
-      );
-      return { cardId, checkLists: response.data };
+      return await fetchCheckListsService(cardId);
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -23,11 +20,7 @@ export const createCheckList = createAsyncThunk(
   "checkLists/createCheckList",
   async ({ cardId, name }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${BaseUrl}/cards/${cardId}/checklists?key=${APIKey}&token=${APIToken}`,
-        { name }
-      );
-      return { cardId, checkList: response.data };
+      return await createCheckListService(cardId, name);
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -38,10 +31,7 @@ export const deleteCheckList = createAsyncThunk(
   "checkLists/deleteCheckList",
   async (checkListId, { rejectWithValue }) => {
     try {
-      await axios.delete(
-        `${BaseUrl}/checklists/${checkListId}?key=${APIKey}&token=${APIToken}`
-      );
-      return checkListId;
+      return await deleteCheckListService(checkListId);
     } catch (error) {
       return rejectWithValue(error.message);
     }

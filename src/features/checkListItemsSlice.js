@@ -1,19 +1,18 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL;
+import {
+  fetchCheckItemsService,
+  createCheckItemService,
+  deleteCheckItemService,
+  updateCheckItemStatusService,
+} from "../services/checkListItemService";
 
 
 export const fetchCheckItems = createAsyncThunk(
   "checkListItems/fetchCheckItems",
   async (checkListId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${BaseUrl}/checklists/${checkListId}/checkItems?key=${APIKey}&token=${APIToken}`
-      );
-      return { checkListId, items: response.data };
+      return await fetchCheckItemsService(checkListId);
     } catch (error) {
       return rejectWithValue("Error fetching checklist items.");
     }
@@ -24,10 +23,7 @@ export const createCheckItem = createAsyncThunk(
   "checkListItems/createCheckItem",
   async ({ checkListId, name }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${BaseUrl}/checklists/${checkListId}/checkItems?name=${name}&key=${APIKey}&token=${APIToken}`
-      );
-      return { checkListId, item: response.data };
+      return await createCheckItemService(checkListId, name);
     } catch (error) {
       return rejectWithValue("Error creating checklist item.");
     }
@@ -36,12 +32,9 @@ export const createCheckItem = createAsyncThunk(
 
 export const deleteCheckItem = createAsyncThunk(
   "checkListItems/deleteCheckItem",
-  async ({ checkListId, itemId }, { rejectWithValue }) => {
+  async ({checkListId, itemId}, { rejectWithValue }) => {
     try {
-      await axios.delete(
-        `${BaseUrl}/checklists/${checkListId}/checkItems/${itemId}?key=${APIKey}&token=${APIToken}`
-      );
-      return { checkListId, itemId };
+      return await deleteCheckItemService(checkListId, itemId);
     } catch (error) {
       return rejectWithValue("Error deleting checklist item.");
     }
@@ -52,10 +45,7 @@ export const updateCheckItemStatus = createAsyncThunk(
   "checkListItems/updateCheckItemStatus",
   async ({ cardId, itemId, newStatus }, { rejectWithValue }) => {
     try {
-      await axios.put(
-        `${BaseUrl}/cards/${cardId}/checkItem/${itemId}?state=${newStatus ? "complete" : "incomplete"}&key=${APIKey}&token=${APIToken}`
-      );
-      return { itemId, newStatus };
+      return await updateCheckItemStatusService(cardId, itemId, newStatus);
     } catch (error) {
       return rejectWithValue("Failed to update checklist item status.");
     }

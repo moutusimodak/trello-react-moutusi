@@ -1,27 +1,19 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL;
+
+import { fetchBoardsService, createBoardService } from "../services/boardService";
 
 export const fetchBoards = createAsyncThunk("boards/fetchBoards", async () => {
-  const response = await axios.get(
-    `${BaseUrl}/members/me/boards?key=${APIKey}&token=${APIToken}`
-  );
-  return response.data;
+  const response = await fetchBoardsService();
+  return response;
 });
 
 export const createBoard = createAsyncThunk(
   "boards/createBoard",
   async ({ name, bgColor }) => {
-    const response = await axios.post(
-      `${BaseUrl}/boards/?name=${encodeURIComponent(
-        name
-      )}&prefs_background=${bgColor}&key=${APIKey}&token=${APIToken}`
-    );
-
-    return response.data;
+    
+    const response = await createBoardService(name, bgColor);
+    return response;
   }
 );
 

@@ -1,17 +1,16 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-const APIKey = import.meta.env.VITE_APIKEY;
-const APIToken = import.meta.env.VITE_TOKEN;
-const BaseUrl = import.meta.env.VITE_BASE_URL;
+
+import {
+  fetchCardsService,
+  createCardService,
+  deleteCardService,
+} from "../services/cardService";
 
 
 export const fetchCards = createAsyncThunk(
   "cards/fetchCards",
   async (listId) => {
-    const response = await axios.get(
-      `${BaseUrl}/lists/${listId}/cards?key=${APIKey}&token=${APIToken}`
-    );
-    return {listId, cards:response.data};
+    return await fetchCardsService(listId);
   }
 );
 
@@ -19,10 +18,7 @@ export const fetchCards = createAsyncThunk(
 export const createCard = createAsyncThunk(
   "cards/createCard",
   async ({ listId, cardName }) => {
-    const response = await axios.post(
-      `${BaseUrl}/cards?name=${encodeURIComponent(cardName)}&idList=${listId}&key=${APIKey}&token=${APIToken}`
-    );
-    return response.data;  
+    return await createCardService(listId, cardName); 
   }
 );
 
@@ -30,8 +26,7 @@ export const createCard = createAsyncThunk(
 export const deleteCard = createAsyncThunk(
   "cards/deleteCard",
   async (cardId) => {
-    await axios.delete(`${BaseUrl}/cards/${cardId}?key=${APIKey}&token=${APIToken}`);
-    return cardId; 
+    return await deleteCardService(cardId);
   }
 );
 
